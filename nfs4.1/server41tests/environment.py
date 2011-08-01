@@ -144,13 +144,15 @@ class Environment(testmod.Environment):
         if self.opts.noinit:
             return
         sess = self.c1.new_client_session("Environment.init_%i" % self.timestamp)
-        if self.opts.maketree:
-            self._maketree(sess)
         # Make sure opts.home exists
-        res = sess.compound(use_obj(self.opts.home))
+        res = sess.compound(use_obj(self.opts.home) + [op.getfh()]);
         check(res, msg="Could not LOOKUP /%s," % '/'.join(self.opts.home))
+        self.c1.root = res.resarray[-1].object
         # Make sure it is empty
         clean_dir(sess, self.opts.home)
+
+        if self.opts.maketree:
+            self._maketree(sess)
         sess.c.null()
 
     def _maketree(self, sess):
@@ -197,7 +199,7 @@ class Environment(testmod.Environment):
         check(res, msg="Writing data to /%s/file" % '/'.join(tree))
         res = close_file(sess, fh, stateid)
         check(res)
-            
+
     def finish(self):
         """Run once after all tests are run"""
         pass
@@ -546,7 +548,11 @@ def maketree(sess, tree, root=None, owner=None):
             create_confirm(sess, owner, root + [obj])
 
 def lookup_obj(sess, path):
-    compound = [op.putrootfh()]
+    if len(path) > 0 and path[0] == '':
+        compound = [op.putrootfh()]
+        path = path[1:]
+    else:
+        compound =  [op.putfh(sess.c.root)]
     compound += [op.lookup(comp) for comp in path]
     compound += [op.getfh()]
     res = sess.compound(compound)
@@ -566,3 +572,4 @@ def link(sess, old, new):
     ops += use_obj(new[:-1])
     ops += [op.link(new[-1])]
     return sess.compound(ops)
+

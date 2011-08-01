@@ -298,7 +298,8 @@ def main():
                     path = nfs4lib.path_components(path)
                 except Exception, e:
                     p.error(e)
-            setattr(opt, attr, [comp for comp in path if comp])
+            path = [comp for comp in path if comp]
+            setattr(opt, attr, [''] + path)
 
     # Check that --security option is valid
     # FIXME STUB
