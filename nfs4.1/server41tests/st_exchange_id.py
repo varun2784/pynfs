@@ -91,6 +91,25 @@ def testSSV(t, env):
 
     res = sess.set_ssv('\x5a' * c.protect.context.ssv_len)
     print res
+
+def testMACH_CRED(t, env):
+    """Do a simple EXCHANGE_ID
+
+    FLAGS: exchange_id all
+    CODE: EID60
+    """
+    # E_ID with MACH_CRED set:
+    enforce = (1<<OP_CREATE_SESSION) | (1<<OP_BIND_CONN_TO_SESSION) | \
+              (1<<OP_DESTROY_SESSION) | (1<<OP_DESTROY_CLIENTID) | \
+              (1<<OP_BACKCHANNEL_CTL)
+    allow = (1<<OP_CLOSE)
+    oplists = state_protect_ops4(enforce, allow)
+    protect = state_protect4_a(SP4_MACH_CRED, spa_mach_ops=oplists)
+    c = env.c1.new_client(env.testname(t), protect=protect)
+
+    sess = c.create_session() # Can we use ssv cred for cb_sec here?
+    # This should fail if not using GSS?  What about E_ID?
+
     
 def testNoImplId(t, env):
     """Do a simple EXCHANGE_ID w/o setting client impl_id
